@@ -2281,7 +2281,6 @@ bool Planner::_populate_block(block_t * const block, bool split_move,
   #endif
   if (!block->steps.a && !block->steps.b && !block->steps.c) {    // Is this a retract / recover move?
     accel = CEIL(settings.retract_acceleration * steps_per_mm);   // Convert to: acceleration steps/sec^2
-    TERN_(LIN_ADVANCE, block->use_advance_lead = false);          // No linear advance for simple retract/recover
   }
   else {
     #define LIMIT_ACCEL_LONG(AXIS,INDX) do{ \
@@ -2320,8 +2319,8 @@ bool Planner::_populate_block(block_t * const block, bool split_move,
         float e_D_ratio = (target_float.e - position_float.e) /
           TERN(IS_KINEMATIC, block->millimeters,
             SQRT(sq(target_float.x - position_float.x)
-              + sq(target_float.y - position_float.y)
-              + sq(target_float.z - position_float.z))
+               + sq(target_float.y - position_float.y)
+               + sq(target_float.z - position_float.z))
           );
 
         // Check for unusual high e_D ratio to detect if a retract move was combined with the last print move due to min. steps per segment. Never execute this with advance!
@@ -2329,7 +2328,7 @@ bool Planner::_populate_block(block_t * const block, bool split_move,
         if (e_D_ratio > 3.0f)
           use_advance_lead = false;
         else {
-          //Scale E acceleration so that it will be possible to jump to the advance speed.
+          // Scale E acceleration so that it will be possible to jump to the advance speed.
           const uint32_t max_accel_steps_per_s2 = MAX_E_JERK(extruder) / (extruder_advance_K[extruder] * e_D_ratio) * steps_per_mm;
           if (TERN0(LA_DEBUG, accel > max_accel_steps_per_s2))
             SERIAL_ECHOLNPGM("Acceleration limited.");
@@ -2365,7 +2364,8 @@ bool Planner::_populate_block(block_t * const block, bool split_move,
       // the Bresenham algorithm will convert this step rate into extruder steps
       block->la_advance_rate = extruder_advance_K[extruder] * block->acceleration_steps_per_s2;
 
-      // reduce LA ISR frequency by calling it only often enough to ensure that there will never be more than four extruder steps per call
+      // reduce LA ISR frequency by calling it only often enough to ensure that there will
+      // never be more than four extruder steps per call
       for (uint32_t dividend = block->steps.e << 1; dividend <= (block->step_event_count >> 2); dividend <<= 1)
         block->la_scaling++;
       #if ENABLED(LA_DEBUG)
